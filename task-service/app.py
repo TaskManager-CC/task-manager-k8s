@@ -3,9 +3,12 @@ import jwt
 import psycopg2
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
+from prometheus_flask_exporter import PrometheusMetrics
+
 
 app = Flask(__name__, template_folder='templates')
 CORS(app)
+metrics = PrometheusMetrics(app)
 
 DB_HOST = os.environ.get('DB_HOST', 'localhost')
 DB_NAME = os.environ.get('DB_NAME', 'tasksdb')
@@ -43,33 +46,32 @@ def manage_tasks():
     if not conn: return jsonify({'message': 'Database unavailable'}), 500
     cursor = conn.cursor()
 
-    # Ensure table has all columns
+    # --- FIX START ---
+    # 1. Create the table and SAVE it immediately
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS tasks (
             id SERIAL PRIMARY KEY, title TEXT, owner TEXT, priority TEXT, 
             due_date TEXT, status TEXT, description TEXT, scheduled_date TEXT
         )
     ''')
-    
-    # Auto-migrations for older versions
+    conn.commit()  # <--- THIS IS THE MAGIC LINE THAT WAS MISSING
+    # --- FIX END ---
+
+    # 2. Migrations (Safe Mode)
     try:
         cursor.execute("ALTER TABLE tasks ADD COLUMN description TEXT")
+        conn.commit()
     except psycopg2.errors.DuplicateColumn:
         conn.rollback()
-    else:
-        conn.commit()
 
     try:
         cursor.execute("ALTER TABLE tasks ADD COLUMN scheduled_date TEXT")
+        conn.commit()
     except psycopg2.errors.DuplicateColumn:
         conn.rollback()
-    else:
-        conn.commit()
-    conn.commit()
 
     if request.method == 'POST':
         data = request.get_json()
-        # 'due_date' is the DEADLINE. 'scheduled_date' is empty initially (goes to NEW)
         cursor.execute(
             'INSERT INTO tasks (title, owner, priority, due_date, status, description, scheduled_date) VALUES (%s, %s, %s, %s, %s, %s, %s)',
             (data['title'], user, data.get('priority', 'Low'), data.get('due_date', ''), 'new', data.get('description', ''), '')
@@ -86,10 +88,10 @@ def manage_tasks():
             'id': t[0], 
             'title': t[1], 
             'priority': t[2], 
-            'due_date': t[3],   # The fixed deadline
+            'due_date': t[3],
             'status': t[4] or 'new', 
             'desc': t[5],
-            'scheduled_date': t[6] # The day it sits on the board
+            'scheduled_date': t[6]
         } for t in tasks])
     
     elif request.method == 'DELETE':
@@ -102,20 +104,15 @@ def manage_tasks():
     elif request.method == 'PUT':
         data = request.get_json()
         task_id = data.get('id')
-        
         fields = []
         values = []
         
         if 'status' in data:
             fields.append("status = %s")
             values.append(data['status'])
-        
-        # When moving cards, we update 'scheduled_date'
         if 'scheduled_date' in data:
             fields.append("scheduled_date = %s")
             values.append(data['scheduled_date'])
-            
-        # Standard edits
         if 'title' in data:
             fields.append("title = %s")
             values.append(data['title'])
