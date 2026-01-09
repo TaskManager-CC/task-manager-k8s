@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-deployment
+spec:
+  replicas: {{ .Values.authService.replicas }}
+  selector:
+    matchLabels:
+      app: auth
+  template:
+    metadata:
+      labels:
+        app: auth
+    spec:
+      containers:
+        - name: auth
+          image: {{ .Values.authService.image }}
+          ports:
+            - containerPort: 5000
+          env:
+            - name: SECRET_KEY
+              value: "supersecretkey"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+spec:
+  type: NodePort
+  selector:
+    app: auth
+  ports:
+    - port: {{ .Values.authService.servicePort }}
+      targetPort: 5000
+      nodePort: {{ .Values.authService.nodePort }}

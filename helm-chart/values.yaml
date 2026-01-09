@@ -1,0 +1,32 @@
+# 1. Auth Service Configuration
+authService:
+  image: alexandraburnichi/auth-service:v1
+  replicas: 1
+  servicePort: 5000
+  nodePort: 30001  # External access port
+
+# 2. Task Service Configuration (Business Logic)
+taskService:
+  image: alexandraburnichi/task-service:v1
+  replicas: 1
+  servicePort: 5001
+  nodePort: 30002
+
+# 3. Database Configuration (PostgreSQL)
+postgres:
+  image: postgres:13
+  storageSize: 1Gi
+  password: password
+  servicePort: 5432
+
+# 4. DB Management (Adminer)
+adminer:
+  image: adminer
+  servicePort: 8080
+  nodePort: 30003
+
+# 5. Cluster Utility (Portainer)
+portainer:
+  image: portainer/portainer-ce:latest
+  servicePort: 9000
+  nodePort: 30004

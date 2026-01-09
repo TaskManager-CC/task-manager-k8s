@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portainer-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: portainer
+  template:
+    metadata:
+      labels:
+        app: portainer
+    spec:
+      containers:
+        - name: portainer
+          image: {{ .Values.portainer.image }}
+          ports:
+            - containerPort: 9000
+          volumeMounts:
+            - mountPath: /var/run/docker.sock
+              name: docker-sock
+      volumes:
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: portainer-service
+spec:
+  type: NodePort
+  selector:
+    app: portainer
+  ports:
+    - port: 9000
+      targetPort: 9000
+      nodePort: {{ .Values.portainer.nodePort }}
