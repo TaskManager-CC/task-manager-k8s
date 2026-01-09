@@ -7,7 +7,7 @@ authService:
 
 # 2. Task Service Configuration (Business Logic)
 taskService:
-  image: alexandraburnichi/task-service:v1
+  image: alexandraburnichi/task-service:v6
   replicas: 1
   servicePort: 5001
   nodePort: 30002

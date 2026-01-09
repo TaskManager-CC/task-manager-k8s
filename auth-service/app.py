@@ -7,12 +7,11 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-# Secret key (In a real app, this comes from Kubernetes Secrets)
 SECRET_KEY = os.environ.get('SECRET_KEY', 'dev_secret_key')
 
-# Simple in-memory storage for users (allowed by requirement: "any internal validation mechanism" [cite: 19])
+# Simple in-memory storage (Resets on restart)
 users = {
-    "admin": "admin",  # default user
+    "admin": "admin"
 }
 
 @app.route('/register', methods=['POST'])
@@ -20,10 +19,12 @@ def register():
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
+    
     if username in users:
         return jsonify({'message': 'User already exists'}), 400
+        
     users[username] = password
-    return jsonify({'message': 'User created successfully'}), 201
+    return jsonify({'message': 'User created successfully! You can now login.'}), 201
 
 @app.route('/login', methods=['POST'])
 def login():
