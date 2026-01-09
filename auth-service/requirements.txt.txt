@@ -1,3 +1,0 @@
-flask
-pyjwt
-flask_cors
