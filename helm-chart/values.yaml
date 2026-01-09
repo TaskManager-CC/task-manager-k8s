@@ -30,3 +30,15 @@ portainer:
   image: portainer/portainer-ce:latest
   servicePort: 9000
   nodePort: 30004
+
+# 6. Monitoring - Prometheus
+prometheus:
+  image: prom/prometheus:latest
+  servicePort: 9090
+  nodePort: 30005
+
+# 7. Monitoring - Grafana
+grafana:
+  image: grafana/grafana:latest
+  servicePort: 3000
+  nodePort: 30006
